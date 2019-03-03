@@ -107,7 +107,7 @@ float s_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<
 	//differ from the goal.
 
 	std::vector<float> s = trajectory.coeff_s;
-	std::vector<float> target = predictions[target_vehicle].state_in(T);
+	std::vector<float> target = predictions[target_vehicle].state_in(trajectory.t);
 
 	for (int id = 0; id < target.size(); id++)
 	{
@@ -115,17 +115,29 @@ float s_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<
 	}
 	std::vector<float> s_target{ target[0],target[1],target[2] };
 
-	//target = predictions[target_vehicle].state_in(T)
-	//target = list(np.array(target) + np.array(delta))
-	//s_targ = target[:3]
-	/*S = [f(T) for f in get_f_and_N_derivatives(s, 2)]
-	cost = 0
-	for actual, expected, sigma in zip(S, s_targ, SIGMA_S) :
-		diff = float(abs(actual - expected))
-		cost += logistic(diff / sigma)
-		return cost*/
+	int N = 2;
+	std::vector<float> list_diff;
+	std::vector<float> coeff=s;
+	list_diff.push_back(pol_evaluation(s, trajectory.t));
 
-	return 1;
+	for (int id = 0; id < N; id++) 
+	{
+		coeff = differentiate(coeff);
+
+		list_diff.push_back(pol_evaluation(coeff, trajectory.t));
+	}
+	float cost = 0.0f;
+
+	for (int id = 0; id < N; id++)
+	{
+		float actual = list_diff[id];
+		float expected = s_target[id];
+		float sigma = sigma_s[id];
+		float diff = float(abs(actual - expected));
+		cost += logistic(diff / sigma);
+	}
+
+	return cost;
 }
 //-----------------------------------------------------------------------------------
 float collision_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
@@ -182,15 +194,20 @@ float total_accel_cost_priv(trajectory_t trajectory, int target_vehicle, std::ve
 }
 //-----------------------------------------------------------------------------------
 
-
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------
 cost_function::cost_function()
 {
-	functions_map["total_accel_cost_priv"] = total_accel_cost_priv;
+	functions_map["s_diff_cost_priv"] = s_diff_cost_priv;
 	//std::string s("add");
 
 	trajectory_t trajectory;
 	int target_vehicle=0;
-	std::vector<float> delta;
+	std::vector<float> delta{ 0, 0, 0, 0, 0, 0 };
 	float goal_t=5.0;
 	std::vector<vehicle> predictions;
 	vehicle veh;
@@ -204,7 +221,7 @@ cost_function::cost_function()
 	trajectory.coeff_d = coeff_d;
 	trajectory.t = 3.0f;
 
-	std::string cost_functions = "total_accel_cost_priv";
+	std::string cost_functions = "s_diff_cost_priv";
 	
 	int res = functions_map[cost_functions](trajectory, target_vehicle, delta, goal_t, predictions);
 }
