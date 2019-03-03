@@ -12,6 +12,8 @@
 #define SPEED_LIMIT (30.0f)
 #define VEHICLE_RADIUS  (1.5f) //# model vehicle as circle to simplify collision detection
 
+#define TIMESTEP (0.5f)
+
 #define SIGMA_T (2.0f)
 
 const float sigma_s[3]{ 10.0f, 4.0f, 2.0f };//s, s_dot, s_dot_dot

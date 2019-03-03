@@ -9,10 +9,10 @@ public:
 	vehicle(std::vector<float> start);
 	std::vector<float> state_in(float dt);
 	~vehicle();
-
+	std::vector<float> start_state;
 private: 
 
-	std::vector<float> start_state;
+	//std::vector<float> start_state;
 
 };
 

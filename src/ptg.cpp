@@ -102,9 +102,9 @@ std::vector<float> ptg::Find_Trajectory(std::vector<float> start_s, std::vector<
 	//all_goals = []
 	std::vector<goal_t> goals;
 
-    float timestep = 0.5f;
-	float t = time - 4.0f * timestep;
-	while (t <= time + 4 * timestep)
+    //float timestep = 0.5f;
+	float t = time - 4.0f * TIMESTEP;
+	while (t <= time + 4 * TIMESTEP)
 	{
 		std::vector<float> target_state = target.state_in(t);
 
@@ -131,7 +131,7 @@ std::vector<float> ptg::Find_Trajectory(std::vector<float> start_s, std::vector<
 			goals.push_back(perturbed_goal);
 		}
 
-		t += timestep;
+		t += TIMESTEP;
 	}
 	std::vector<trajectory_t> trajectories;
 
