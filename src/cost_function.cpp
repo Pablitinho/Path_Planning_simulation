@@ -1,6 +1,20 @@
 #include "cost_function.h"
 #include "math.h"
 #include "float.h"
+
+std::vector<float> differentiate(std::vector<float> coefficients)
+{
+
+	//Calculates the derivative of a polynomial and returns
+	//the corresponding coefficients.
+	std::vector<float> new_cos;
+	for (int id = 1; id < coefficients.size(); id++) 
+	{
+		new_cos.push_back((id) * coefficients[id]);
+	}
+	
+    return new_cos;
+}
 //-----------------------------------------------------------------------------------
 float pol_evaluation(std::vector<float> coeff, float t)
 {
@@ -117,7 +131,6 @@ float s_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<
 float collision_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
 {
 	//Binary cost function which penalizes collisions.
-		
 	float nearest = nearest_approach_to_any_vehicle(trajectory, predictions);
 	if (nearest < 2.0f * VEHICLE_RADIUS)
 	{
@@ -129,33 +142,69 @@ float collision_cost_priv(trajectory_t trajectory, int target_vehicle, std::vect
 	}
 }
 //-----------------------------------------------------------------------------------
+float buffer_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	//	Penalizes getting close to other vehicles.	
+	float nearest = nearest_approach_to_any_vehicle(trajectory, predictions);
+	return logistic(2 * VEHICLE_RADIUS / nearest);
+}
 //-----------------------------------------------------------------------------------
+float efficiency_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{	
+	//Rewards high average speeds.
+	float avg_v = (float)(pol_evaluation(trajectory.coeff_s, trajectory.t)) / trajectory.t;
+    float targ_s = predictions[target_vehicle].state_in(trajectory.t)[0];
+
+	float targ_v = (float)(targ_s) / trajectory.t;
+	return logistic(2 * float(targ_v - avg_v) / avg_v);
+}
 //-----------------------------------------------------------------------------------
+float total_accel_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	//s, d, t = traj;
+
+	std::vector<float> s_dot = differentiate(trajectory.coeff_s);
+	std::vector<float> s_d_dot = differentiate(s_dot);
+	//a = to_equation(s_d_dot);
+	float total_acc = 0;
+	float dt = T / 100.0f;
+	float t = 0;
+	
+	//for i in range(100) :
+	for (int i=0;i<100;i++)
+	{
+		t = dt * i;
+		float acc = pol_evaluation(s_d_dot, t);// a(t);
+		total_acc += abs(acc*dt);
+	}
+	float acc_per_second = total_acc / T;
+	return logistic(acc_per_second / EXPECTED_ACC_IN_ONE_SEC);
+}
 //-----------------------------------------------------------------------------------
 
 
 cost_function::cost_function()
 {
-	functions_map["collision_cost_priv"] = collision_cost_priv;
+	functions_map["total_accel_cost_priv"] = total_accel_cost_priv;
 	//std::string s("add");
 
 	trajectory_t trajectory;
 	int target_vehicle=0;
 	std::vector<float> delta;
-	float goal_t=0;
+	float goal_t=5.0;
 	std::vector<vehicle> predictions;
 	vehicle veh;
 	std::vector<float> state{ 0, 10, 0, 0, 0, 0 };
 	veh.start_state = state;
 	predictions.push_back(veh);
-	std::vector<float> coeff_s{ 10.0, 10.0, 0.0, -10.40704454, 5.49570387, -0.75748133};
-	std::vector<float> coeff_d{ 4.0, 0.0, 0.0, -0.48108949, 0.13489574, -0.0049386};
+	std::vector<float> coeff_s{ 10.0, 10.0, 0.0, -3.7037037,1.85185185,-0.24691358 };
+	std::vector<float> coeff_d{ 4.0, 0.0, 0.0, -1.48148148, 0.74074074, -0.09876543 };
 
 	trajectory.coeff_s = coeff_s;
 	trajectory.coeff_d = coeff_d;
 	trajectory.t = 3.0f;
 
-	std::string cost_functions = "collision_cost_priv";
+	std::string cost_functions = "total_accel_cost_priv";
 	
 	int res = functions_map[cost_functions](trajectory, target_vehicle, delta, goal_t, predictions);
 }
