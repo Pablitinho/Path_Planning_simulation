@@ -1,5 +1,5 @@
 #include "cost_function.h"
-#include "math.h"
+#include <cmath>
 #include "float.h"
 
 std::vector<float> differentiate(std::vector<float> coefficients)
@@ -102,7 +102,6 @@ float time_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vect
 //-----------------------------------------------------------------------------------
 float s_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
 {
-
 	//Penalizes trajectories whose s coordinate(and derivatives)
 	//differ from the goal.
 
@@ -128,15 +127,45 @@ float s_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<
 	}
 	float cost = 0.0f;
 
-	for (int id = 0; id < N; id++)
+	for (int id = 0; id < list_diff.size(); id++)
 	{
 		float actual = list_diff[id];
 		float expected = s_target[id];
 		float sigma = sigma_s[id];
-		float diff = float(abs(actual - expected));
+		float diff = fabsf(actual - expected);
 		cost += logistic(diff / sigma);
 	}
 
+	return cost;
+}
+//-----------------------------------------------------------------------------------
+float d_diff_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	//Penalizes trajectories whose d coordinate(and derivatives)
+	//differ from the goal.
+	T = trajectory.t;
+
+	std::vector<float> d_dot_coeffs = differentiate(trajectory.coeff_d);
+	std::vector<float> d_ddot_coeffs = differentiate(d_dot_coeffs);
+
+	std::vector<float> D{pol_evaluation(trajectory.coeff_d,T),pol_evaluation(d_dot_coeffs,T) ,pol_evaluation(d_ddot_coeffs,T) };
+	std::vector<float> target = predictions[target_vehicle].state_in(T);
+
+	for (int id = 0; id < target.size(); id++)
+	{
+		target[id] += delta[id];
+	}
+	std::vector<float> d_target{ target[3],target[4],target[5] };
+
+	float cost = 0.0f;
+	for (int id = 0; id < D.size(); id++)
+	{
+		float actual = D[id];
+		float expected = d_target[id];
+		float sigma = sigma_d[id];
+		float diff = fabsf(actual - expected);
+		cost += logistic(diff / sigma);
+	}
 	return cost;
 }
 //-----------------------------------------------------------------------------------
@@ -159,6 +188,16 @@ float buffer_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<
 	//	Penalizes getting close to other vehicles.	
 	float nearest = nearest_approach_to_any_vehicle(trajectory, predictions);
 	return logistic(2 * VEHICLE_RADIUS / nearest);
+}
+//-----------------------------------------------------------------------------------
+float stays_on_road_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	return 1;
+}
+//-----------------------------------------------------------------------------------
+float exceeds_speed_limit_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	return 1;
 }
 //-----------------------------------------------------------------------------------
 float efficiency_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
@@ -193,16 +232,103 @@ float total_accel_cost_priv(trajectory_t trajectory, int target_vehicle, std::ve
 	return logistic(acc_per_second / EXPECTED_ACC_IN_ONE_SEC);
 }
 //-----------------------------------------------------------------------------------
+float max_accel_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	std::vector<float> s_dot = differentiate(trajectory.coeff_s);
+	std::vector<float> s_d_dot = differentiate(s_dot);
+	std::vector<float> all_accs;
+	float max_abs = 0.0f;
 
+	for (int i = 0; i<100;i++)
+	{
+		//all_accs.push_back(pol_evaluation(s_dot, (float(T) / 100 * i)));
+		float value = pol_evaluation(s_d_dot, (float(T) / 100 * i));
+
+		if (fabsf(max_abs) < fabsf(value)) 
+		{
+			max_abs = value;
+		}
+	}
+
+	if (fabsf(max_abs) > MAX_ACCEL)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
 //-----------------------------------------------------------------------------------
+float max_jerk_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	std::vector<float> s_dot = differentiate(trajectory.coeff_s);
+	std::vector<float> s_d_dot = differentiate(s_dot);
+	std::vector<float> jerk = differentiate(s_d_dot);
+
+	float max_abs = 0.0f;
+	for (int i = 0; i < 100; i++)
+	{
+		//all_accs.push_back(pol_evaluation(s_dot, (float(T) / 100 * i)));
+		float value = pol_evaluation(jerk, (float(T) / 100 * i));
+
+		if (fabsf(max_abs) < fabsf(value))
+		{
+			max_abs = value;
+		}
+	}
+
+	if (fabsf(max_abs) > MAX_JERK)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
 //-----------------------------------------------------------------------------------
+float total_jerk_cost_priv(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	std::vector<float> s_dot = differentiate(trajectory.coeff_s);
+	std::vector<float> s_d_dot = differentiate(s_dot);
+	std::vector<float> diff_s_d_dot = differentiate(s_d_dot);
+
+	float total_jerk = 0.0f;
+	float dt = T / 100.0f;
+	float j = 0.0f;
+
+	for (int i = 0; i < 100; i++)
+	{
+		float t = dt * (float)i;		 
+		j = pol_evaluation(diff_s_d_dot, t);
+		total_jerk += fabsf(j*dt);
+	}
+
+	float jerk_per_second = total_jerk / T;
+
+	return logistic(jerk_per_second / EXPECTED_JERK_IN_ONE_SEC);
+}
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------
 cost_function::cost_function()
 {
+	// Add functions to 
+	functions_map["time_diff_cost_priv"] = time_diff_cost_priv;
 	functions_map["s_diff_cost_priv"] = s_diff_cost_priv;
+	functions_map["d_diff_cost_priv"] = d_diff_cost_priv;
+	functions_map["collision_cost_priv"] = collision_cost_priv;
+	functions_map["buffer_cost_priv"] = buffer_cost_priv;
+	functions_map["stays_on_road_cost_priv"] = stays_on_road_cost_priv;
+	functions_map["exceeds_speed_limit_cost_priv"] = exceeds_speed_limit_cost_priv;
+	functions_map["efficiency_cost_priv"] = efficiency_cost_priv;
+	functions_map["total_accel_cost_priv"] = total_accel_cost_priv;
+	functions_map["max_accel_cost_priv"] = max_accel_cost_priv;
+	functions_map["max_jerk_cost_priv"] = max_jerk_cost_priv;
+	functions_map["total_jerk_cost_priv"] = total_jerk_cost_priv;
+
 	//std::string s("add");
 
 	trajectory_t trajectory;
@@ -221,7 +347,7 @@ cost_function::cost_function()
 	trajectory.coeff_d = coeff_d;
 	trajectory.t = 3.0f;
 
-	std::string cost_functions = "s_diff_cost_priv";
+	std::string cost_functions = "exceeds_speed_limit_cost_priv";
 	
 	int res = functions_map[cost_functions](trajectory, target_vehicle, delta, goal_t, predictions);
 }
