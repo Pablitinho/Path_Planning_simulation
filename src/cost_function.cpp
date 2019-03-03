@@ -316,7 +316,7 @@ float total_jerk_cost_priv(trajectory_t trajectory, int target_vehicle, std::vec
 //-----------------------------------------------------------------------------------
 cost_function::cost_function()
 {
-	// Add functions to 
+	// Add functions cost 
 	functions_map["time_diff_cost_priv"] = time_diff_cost_priv;
 	functions_map["s_diff_cost_priv"] = s_diff_cost_priv;
 	functions_map["d_diff_cost_priv"] = d_diff_cost_priv;
@@ -330,16 +330,7 @@ cost_function::cost_function()
 	functions_map["max_jerk_cost_priv"] = max_jerk_cost_priv;
 	functions_map["total_jerk_cost_priv"] = total_jerk_cost_priv;
 
-	std::map<std::string, FnPtr>::iterator it = functions_map.begin();
-	int cnt = 0;
-	while (it != functions_map.end())
-	{
-	
-		std::string  cad = it->first;
-		std::cout << it->first.c_str() << std::endl;
-		it++;
-		cnt++;
-	}
+
 	//// For testing 
 	//trajectory_t trajectory;
 	//int target_vehicle=0;
@@ -365,15 +356,18 @@ float cost_function::estimate_all_cost(trajectory_t trajectory, int target_vehic
 {
 	std::map<std::string, FnPtr>::iterator it = functions_map.begin();
 	float cost = 0.0f;
+	// Iterate over all the elements in the map
 	while (it != functions_map.end())
 	{
+		// Get the function name
 		std::string  function_name = it->first;
-		cost += functions_map[function_name](trajectory, target_vehicle, delta, T, predictions);
-
-		//std::cout << it->first.c_str() << std::endl;
-		it++;
 		
+		// Execute the pertinent data
+		cost += functions_map[function_name](trajectory, target_vehicle, delta, T, predictions);
+		it++;
 	}
+
+	return cost;
 }
 
 cost_function::~cost_function()
