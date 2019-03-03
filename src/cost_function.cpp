@@ -1,6 +1,7 @@
 #include "cost_function.h"
 #include <cmath>
 #include "float.h"
+#include <iostream>
 
 std::vector<float> differentiate(std::vector<float> coefficients)
 {
@@ -329,29 +330,51 @@ cost_function::cost_function()
 	functions_map["max_jerk_cost_priv"] = max_jerk_cost_priv;
 	functions_map["total_jerk_cost_priv"] = total_jerk_cost_priv;
 
-	//std::string s("add");
-
-	trajectory_t trajectory;
-	int target_vehicle=0;
-	std::vector<float> delta{ 0, 0, 0, 0, 0, 0 };
-	float goal_t=5.0;
-	std::vector<vehicle> predictions;
-	vehicle veh;
-	std::vector<float> state{ 0, 10, 0, 0, 0, 0 };
-	veh.start_state = state;
-	predictions.push_back(veh);
-	std::vector<float> coeff_s{ 10.0, 10.0, 0.0, -3.7037037,1.85185185,-0.24691358 };
-	std::vector<float> coeff_d{ 4.0, 0.0, 0.0, -1.48148148, 0.74074074, -0.09876543 };
-
-	trajectory.coeff_s = coeff_s;
-	trajectory.coeff_d = coeff_d;
-	trajectory.t = 3.0f;
-
-	std::string cost_functions = "exceeds_speed_limit_cost_priv";
+	std::map<std::string, FnPtr>::iterator it = functions_map.begin();
+	int cnt = 0;
+	while (it != functions_map.end())
+	{
 	
-	int res = functions_map[cost_functions](trajectory, target_vehicle, delta, goal_t, predictions);
+		std::string  cad = it->first;
+		std::cout << it->first.c_str() << std::endl;
+		it++;
+		cnt++;
+	}
+	//// For testing 
+	//trajectory_t trajectory;
+	//int target_vehicle=0;
+	//std::vector<float> delta{ 0, 0, 0, 0, 0, 0 };
+	//float goal_t=5.0;
+	//std::vector<vehicle> predictions;
+	//vehicle veh;
+	//std::vector<float> state{ 0, 10, 0, 0, 0, 0 };
+	//veh.start_state = state;
+	//predictions.push_back(veh);
+	//std::vector<float> coeff_s{ 10.0, 10.0, 0.0, -3.7037037,1.85185185,-0.24691358 };
+	//std::vector<float> coeff_d{ 4.0, 0.0, 0.0, -1.48148148, 0.74074074, -0.09876543 };
+
+	//trajectory.coeff_s = coeff_s;
+	//trajectory.coeff_d = coeff_d;
+	//trajectory.t = 3.0f;
+
+	//std::string cost_functions = "exceeds_speed_limit_cost_priv";
+	//
+	//int res = functions_map[cost_functions](trajectory, target_vehicle, delta, goal_t, predictions);
 }
- 
+float cost_function::estimate_all_cost(trajectory_t trajectory, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	std::map<std::string, FnPtr>::iterator it = functions_map.begin();
+	float cost = 0.0f;
+	while (it != functions_map.end())
+	{
+		std::string  function_name = it->first;
+		cost += functions_map[function_name](trajectory, target_vehicle, delta, T, predictions);
+
+		//std::cout << it->first.c_str() << std::endl;
+		it++;
+		
+	}
+}
 
 cost_function::~cost_function()
 {
