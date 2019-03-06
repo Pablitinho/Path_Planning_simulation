@@ -5,7 +5,7 @@
 
 void MainWindow::ComputeTrajectory()
 {
-	std::vector<float> start_vector {0.0, 10.0, 0.0f, 0.0f, 0.0f, 0.0f};
+	std::vector<float> start_vector {0.0f, 5.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 	std::vector<vehicle> predictions;
 	
 	int target = 0;
@@ -19,11 +19,12 @@ void MainWindow::ComputeTrajectory()
 	
 	ptg poly_traj_gen;
 
-	std::vector<float> best = poly_traj_gen.Find_Trajectory(start_s, start_d, target, delta, time, predictions);
+	trajectory_t best_traj = poly_traj_gen.Find_Trajectory(start_s, start_d, target, delta, time, predictions);
 }
 //---------------------------------------------------------------------------
 void MainWindow::Set_Data(QwtPlot * plot,std::string title,std::vector<QPointF> vect_points, QColor color)
 {
+
 	// Compute the trayectory of the car
 	ComputeTrajectory();
 

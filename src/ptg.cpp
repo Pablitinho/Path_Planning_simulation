@@ -16,6 +16,7 @@ ptg::ptg(std::vector<float> start)
 {
  
 }
+//-----------------------------------------------------------------------------------------------
 std::vector<float> ptg::JMT(std::vector<float> start, std::vector<float> goal, float T)
 {
 	/**
@@ -92,7 +93,7 @@ goal_t ptg::Perturb_Goal(std::vector<float> goal_s, std::vector<float> goal_d, f
 	return goal;
 }
 //-----------------------------------------------------------------------------------------------
-std::vector<float> ptg::Find_Trajectory(std::vector<float> start_s, std::vector<float> start_d,
+trajectory_t ptg::Find_Trajectory(std::vector<float> start_s, std::vector<float> start_d,
 	int target_vehicle, std::vector<float> delta, float time,
 	std::vector<vehicle> predictions) 
 {
@@ -147,8 +148,32 @@ std::vector<float> ptg::Find_Trajectory(std::vector<float> start_s, std::vector<
 	}
 
 	// Get the path with less cost
+	int id_traj = best_trajectory(trajectories,target_vehicle,  delta, time, predictions);
 
-	return best;
+	return trajectories[id_traj];
+}
+//-----------------------------------------------------------------------------------------------
+int ptg::best_trajectory(std::vector<trajectory_t> trajectories, int target_vehicle, std::vector<float> delta, float T, std::vector<vehicle> predictions)
+{
+	float cost = 0.0f;
+	float cost_min = FLT_MAX;
+	int cost_min_idx = 0;
+	std::vector<float> cost_list;
+	for (int id_traj = 0; id_traj < trajectories.size(); id_traj++)
+	{
+		cost = cost_func.estimate_all_costs(trajectories[id_traj],target_vehicle, delta, T, predictions);
+		cost_list.push_back(cost);
+
+		if (cost_min > cost) 
+		{
+			cost_min = cost;
+			cost_min_idx = id_traj;
+		}
+	}
+
+	int i = 0;
+
+	return 1.0;
 }
 //-----------------------------------------------------------------------------------------------
 ptg::~ptg()
@@ -156,3 +181,5 @@ ptg::~ptg()
 
 }
 //-----------------------------------------------------------------------------------------------
+
+
