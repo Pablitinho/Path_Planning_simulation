@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#define N_SAMPLES (100U)
+#define N_SAMPLES (50U)
 
 #define MAX_JERK (10.0f)// # m/s/s/s
 #define MAX_ACCEL (10.0f)// # m/s/s
@@ -16,7 +16,7 @@
 
 #define SIGMA_T (2.0f)
 
-const float sigma_s[3]{ 20.0f, 10.0f, 5.1f };//s, s_dot, s_dot_dot
+const float sigma_s[3]{ 10.0f, 5.0f, 2.1f };//s, s_dot, s_dot_dot
 const float sigma_d[3]{ 2.0f, 3.0f, 3.0f };
 
 typedef struct

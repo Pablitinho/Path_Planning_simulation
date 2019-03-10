@@ -17,6 +17,25 @@ ptg::ptg(std::vector<float> start)
  
 }
 //-----------------------------------------------------------------------------------------------
+std::vector<point_2d_t> ptg::Create_Trajectory(trajectory_t best_traj)
+{
+	float t = 0.0f;
+
+	std::vector<point_2d_t> points;
+
+	while (t <= best_traj.t + 0.01)
+	{
+		point_2d_t point;
+		point.x = cost_function::pol_evaluation(best_traj.coeff_s, t);
+	    point.y = cost_function::pol_evaluation(best_traj.coeff_d, t);
+		points.push_back(point);
+		 
+		t += 0.25;
+	}
+	
+	return points;
+}
+//-----------------------------------------------------------------------------------------------
 std::vector<float> ptg::JMT(std::vector<float> start, std::vector<float> goal, float T)
 {
 	/**
@@ -127,7 +146,7 @@ trajectory_t ptg::Find_Trajectory(std::vector<float> start_s, std::vector<float>
 		for (int id_sample = 0; id_sample < N_SAMPLES; id_sample++)
 		{
 			goal_t perturbed_goal= this->Perturb_Goal(goal_s, goal_d,t);
-			perturbed_goal.t = t;
+			//perturbed_goal.t = t;
 
 			goals.push_back(perturbed_goal);
 		}

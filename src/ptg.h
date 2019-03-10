@@ -2,8 +2,14 @@
 #include <vector>
 #include <vehicle.h>
 #include "constants.h"
-
+#include <vector>
 #include "cost_function.h"
+
+typedef struct
+{
+	float x;
+	float y;
+}point_2d_t;
 
 //Polynomial Trajectory Generation
 class ptg
@@ -16,6 +22,9 @@ public:
 	trajectory_t Find_Trajectory(std::vector<float> start_s, std::vector<float> start_d,
 									   int target_vehicle, std::vector<float> delta, float time,
 		                               std::vector<vehicle> predictions);
+
+	std::vector<point_2d_t> Create_Trajectory(trajectory_t best_traj);
+
 	~ptg();
 
 private: 

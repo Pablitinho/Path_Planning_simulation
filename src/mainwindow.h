@@ -10,6 +10,9 @@
 #include <qwt_symbol.h>
 #include <qwt_legend.h>
 
+#include "vehicle.h"
+#include "ptg.h"
+
 namespace Ui {
 class MainWindow;
 }
@@ -23,11 +26,11 @@ public:
     ~MainWindow();
 
 private:
-	void Create_plot();
-	void Set_Data(QwtPlot * plot, std::string title, std::vector<QPointF> vect_points, QColor color);
+	void Create_plot(std::vector<point_2d_t> points);
+	void Set_Data(QwtPlot * plot, std::string title, std::vector<point_2d_t> vect_points, QColor color);
     Ui::MainWindow *ui;
 
-	void ComputeTrajectory();
+	std::vector<point_2d_t> ComputeTrajectory();
 
 	QwtPlot * plot;
 };
